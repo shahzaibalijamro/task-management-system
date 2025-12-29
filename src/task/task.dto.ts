@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MinLength,
 } from 'class-validator';
 import { Status } from './task.entity';
@@ -34,4 +35,9 @@ export class FilterDto {
   @IsOptional()
   @Transform(({ value }) => value.toLowerCase())
   search?: string;
+}
+
+export class IdDto{
+    @IsUUID()
+    id: string
 }

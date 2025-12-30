@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Status, Task } from './task.entity';
 import { Repository } from 'typeorm';
-import { CreateTaskDto, FilterDto, IdDto } from './task.dto';
+import { CreateTaskDto, FilterDto, IdDto, UpdateTaskStatusDto } from './task.dto';
 
 @Injectable()
 export class TaskService {
@@ -23,8 +23,8 @@ export class TaskService {
 
         if (search) {
             query.andWhere(
-                '(task.title LIKE :search OR task.description LIKE :search)',
-                { search: `%${search}%` }
+                'LOWER(task.title) LIKE :search OR LOWER(task.description) LIKE :search',
+                { search: `%${search.toLowerCase()}%` }
             );
         }
 
@@ -40,7 +40,7 @@ export class TaskService {
     async findTaskById(id: string): Promise<Task>{
         const task = await this.task.findOne({
             where: {
-                id: id,
+                id,
             }
         })
 
@@ -58,9 +58,19 @@ export class TaskService {
             description,
             status: Status.OPEN
         })
-        if (!task) {
-            throw new Error('Could not create task!')
-        }
+        return task;
+    }
+
+    async removeTaskById(id: string): Promise<Task>{
+        const task = await this.findTaskById(id);
+        await this.task.remove(task);
+        return task
+    }
+
+    async updateTaskById(body: UpdateTaskStatusDto, id: string): Promise<Task>{
+        const task = await this.findTaskById(id);
+        task.status = body.status;
+        await this.task.save(task);
         return task;
     }
 }

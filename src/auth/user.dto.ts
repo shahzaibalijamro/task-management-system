@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-export class CreateUserDto {
+export class AuthCredentialsDto {
   @IsNotEmpty()
   @IsString()
   @MinLength(8)
@@ -14,4 +14,10 @@ export class CreateUserDto {
     { message: 'Password too weak' },
   )
   password: string;
+}
+
+export class UserWithoutPass{
+  username: string;
+
+  id: string
 }

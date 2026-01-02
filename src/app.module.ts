@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TaskModule } from './task/task.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 
 @Module({
@@ -13,7 +14,12 @@ import { AuthModule } from './auth/auth.module';
     type: 'postgres',
     port: 5432,
     synchronize: true
-  }),TaskModule, AuthModule],
+  }),
+  ConfigModule.forRoot({
+    isGlobal: true,
+    envFilePath: '.env'
+  }),
+  TaskModule, AuthModule],
   controllers: [],
   providers: [],
 })

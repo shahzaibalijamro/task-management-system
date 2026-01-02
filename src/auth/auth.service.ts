@@ -1,12 +1,12 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AuthCredentialsDto, UserWithoutPass } from './user.dto';
+import { AuthCredentialsDto } from './user.dto';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -15,12 +15,19 @@ import { JwtService } from '@nestjs/jwt';
 export class AuthService {
   constructor(
     @InjectRepository(User)
-    private readonly user: Repository<User>,
+    private readonly userRepo: Repository<User>,
     private readonly jwtService: JwtService,
   ) {}
 
   async getUserByUsername(username: string): Promise<User | null> {
-    return await this.user.findOne({ where: { username } });
+    return await this.userRepo.findOne({
+      where: { username },
+      select: ['id', 'username', 'password'],
+    });
+  }
+
+  async getUserById(userId: string): Promise<User | null> {
+    return await this.userRepo.findOne({ where: { id: userId } });
   }
 
   async createUser(body: AuthCredentialsDto): Promise<void> {
@@ -33,7 +40,7 @@ export class AuthService {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     try {
-      await this.user.save({
+      await this.userRepo.save({
         username,
         password: hashedPassword,
       });
@@ -45,25 +52,18 @@ export class AuthService {
     }
   }
 
-  async loginUser(body: AuthCredentialsDto): Promise<{accessToken: string}> {
+  async loginUser(body: AuthCredentialsDto): Promise<{ accessToken: string }> {
     const { username, password } = body;
 
     const user = await this.getUserByUsername(username);
-
-    if (!user) {
-      throw new BadRequestException('Invalid username or password!');
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException('Invalid username or password!');
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const accessToken: string = await this.jwtService.signAsync({
+      sub: user.id,
+    });
 
-    if (!isPasswordValid) {
-      throw new BadRequestException('Invalid username or password!');
-    }
-
-    const accessToken:string = await this.jwtService.signAsync({username});
-
-    return {
-      accessToken
-    };
+    return { accessToken };
   }
 }

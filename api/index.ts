@@ -19,7 +19,7 @@ async function bootstrap() {
 
     // Enable CORS if your frontend is on a different domain
     app.enableCors({
-        origin: 'http://localhost:5173',
+        origin: 'https://task-management-system-nest.netlify.app',
         credentials: true
     });
 

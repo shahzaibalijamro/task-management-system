@@ -3,8 +3,8 @@ import { TaskService } from './task.service';
 import { Task } from './task.entity';
 import { CreateTaskDto, FilterDto, IdDto, UpdateTaskStatusDto } from './task.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { GetUser } from 'src/common/decorators';
-import { User } from 'src/auth/user.entity';
+import { GetUser } from '../common/decorators';
+import { User } from '../auth/user.entity';
 
 @Controller('task')
 @UseGuards(AuthGuard())

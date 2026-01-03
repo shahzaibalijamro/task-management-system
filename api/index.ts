@@ -1,39 +1,47 @@
 // api/index.ts
 import { NestFactory } from '@nestjs/core';
-import { INestApplication } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from '../src/app.module';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import express from 'express';
+import cors from 'cors';
 
-// Cache the app instance
-let cachedApp: INestApplication;
+let cachedApp: any;
 
 async function bootstrap() {
   if (!cachedApp) {
-    // Create the NestJS app using the Express adapter
-    const expressApp = require('express')();
-    const app = await NestFactory.create(
-      AppModule,
-      new ExpressAdapter(expressApp),
+    const expressApp = express();
+
+    // CORS on the Express layer (handles preflight OPTIONS properly)
+    expressApp.use(
+      cors({
+        origin: 'https://task-management-system-nest.netlify.app', // exact origin required if credentials:true
+        credentials: true,
+        methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      }),
     );
 
-    // Enable CORS if your frontend is on a different domain
+    // Optional: quick handler for OPTIONS if you want explicit 204 responses
+    expressApp.options('*', (req, res) => res.sendStatus(204));
+
+    // Create Nest app using the same express instance
+    const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
+    // You can still enable CORS at Nest level (redundant), but express-level cors is what matters here:
     app.enableCors({
-        origin: 'https://task-management-system-nest.netlify.app',
-        credentials: true
+      origin: 'https://task-management-system-nest.netlify.app',
+      credentials: true,
     });
 
     await app.init();
-    
-    // Assign the underlying Express instance to the cached app
-    cachedApp = app;
+
+    cachedApp = expressApp; // cache the express app (callable)
   }
   return cachedApp;
 }
 
-// This is the default export Vercel looks for
 export default async (req: Request, res: Response) => {
   const app = await bootstrap();
-  const expressApp = app.getHttpAdapter().getInstance();
-  expressApp(req, res);
+  // express app is a request handler: call it directly
+  app(req, res);
 };
